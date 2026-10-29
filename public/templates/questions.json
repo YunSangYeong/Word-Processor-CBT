@@ -1,0 +1,25 @@
+[
+  {
+    "id": "LOCAL-EXAMPLE-001",
+    "subject": "워드프로세싱 용어 및 기능",
+    "topic": "문서에서 특정 단어를 다른 단어로 일괄 수정하는 기능은",
+    "question": "직접 작성한 문항의 문제를 입력하세요.",
+    "choices": [
+      "찾아 바꾸기",
+      "메일 머지",
+      "인쇄 미리 보기",
+      "머리말"
+    ],
+    "answer": 1,
+    "explanation": "찾아 바꾸기는 검색 조건에 맞는 문자열을 지정한 문자열로 치환한다. 일괄 변경 전 적용 범위와 변경 결과를 확인해야 한다.",
+    "difficulty": "하",
+    "year": null,
+    "session": null,
+    "type": "original",
+    "sourceUrl": "https://github.com/YunSangYeong/Word-Processor-CBT/blob/main/docs/QUESTION_BANK.md",
+    "verificationStatus": "pending",
+    "reviewNote": "출처·권한·정답 직접 확인 후 승인 필요",
+    "version": "main",
+    "rights": "자체 제작 · CC BY 4.0 · Word-Processor-CBT contributors"
+  }
+]
