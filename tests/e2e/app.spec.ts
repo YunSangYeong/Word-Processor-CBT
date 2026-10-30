@@ -32,7 +32,7 @@ test("학습 기준 선택 제거·모바일 화면·기록 복원", async ({ pa
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
-  await expect(page.locator(".bank-summary")).toContainText(/등록\s*120문항/);
+  await expect(page.locator(".bank-summary")).toContainText(/등록\s*1000문항/);
   await expect(page.getByLabel("학습 기준")).toHaveCount(0);
   await expect(page.locator("main")).not.toContainText("학습 기준");
   await expect(page.locator("main")).not.toContainText("2027–2029");
@@ -204,7 +204,7 @@ test("JSON 등록·중복 제거·검수 대기·사용자 검수·CSV 등록·�
   await expectNoDefaultVersionYears(page);
   await expect(page.locator(".bank-filter")).toContainText("기본 문제은행");
   await expect(page.locator(".bank-row")).toHaveCount(20);
-  await expect(page.locator(".pagination")).toContainText("1 / 6");
+  await expect(page.locator(".pagination")).toContainText("1 / 50");
   await page.getByLabel("문항 검색", { exact: true }).fill("WP-1-040");
   await expect(page.locator(".bank-row")).toHaveCount(1);
   await page.locator(".bank-row summary").click();
@@ -493,4 +493,27 @@ test('높은 평균이어도 과목별 과락이면 불합격·과목별 결과 
   await expect(page.locator('.result-score')).toContainText('78.3');
   await expect(page.locator('.result-hero>.tag')).toHaveText('불합격');
   await expect(page.locator('.review-card')).toHaveCount(60);
+});
+
+test('1000문항 집계·변형 유형 공개·새 문항 검색 및 마지막 페이지',async({page})=>{
+  await page.goto('');
+  await expect(page.locator('.bank-summary')).toContainText(/등록\s*1000문항/);
+  await nav(page,'문제은행 관리');
+  await page.getByText('시험 규칙·문항 출처·검수 범위 확인',{exact:true}).click();
+  await expect(page.locator('.source-details')).toContainText('부족 0문항');
+  await expect(page.locator('.source-details')).toContainText('개념·사례형 420');
+  await expect(page.locator('.source-details')).toContainText('계산 조건 변형 580(29유형)');
+  await expect(page.locator('.source-details')).toContainText('공식 확인은 미완료');
+  await page.getByLabel('문항 검색',{exact:true}).fill('WP-N-duplex-copies-020');
+  await expect(page.locator('.bank-row')).toHaveCount(1);
+  await page.locator('.bank-row summary').click();
+  await expect(page.locator('.bank-row .explanation')).toContainText('120장');
+  await expect(page.locator('.bank-row .source')).toContainText('계산 조건 변형');
+  await page.getByLabel('문항 검색',{exact:true}).fill('');
+  for(let i=0;i<49;i++) await page.locator('.pagination').getByRole('button',{name:'다음',exact:true}).click();
+  await expect(page.locator('.pagination')).toContainText('50 / 50');
+  await expect(page.locator('.bank-row')).toHaveCount(20);
+  await expect(page.locator('.pagination').getByRole('button',{name:'다음',exact:true})).toBeDisabled();
+  await page.locator('.bank-row summary').last().click();
+  await expect(page.locator('.bank-row').last()).toContainText('WP-N-byte-not-020');
 });

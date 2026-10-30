@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -5,12 +6,15 @@ import { BASE_BANK as bank, SUBJECTS, STORAGE_KEY, createExam, grade, emptyStore
 import type { Store } from '../src/model';
 import { PROFILE } from '../src/qualification';
 describe('워드프로세서 문제은행과 출처', () => {
-  it('120개 내부 검토 문항·과목별40·부족880을 정확히 집계한다', () => {
-    expect(bank).toHaveLength(120);
-    expect(new Set(bank.map(q=>q.id)).size).toBe(120);
-    expect(new Set(bank.map(fingerprint)).size).toBe(120);
-    SUBJECTS.forEach(s=>expect(bank.filter(q=>q.subject===s)).toHaveLength(40));
-    expect(PROFILE.targetReviewedCount-bank.length).toBe(880);
+  it('기존 120개 전체 필드와 ID를 그대로 보존',()=>{
+    expect(createHash('sha256').update(JSON.stringify(bank.slice(0,120))).digest('hex')).toBe('838c33fe75352198c1f3f5d654d8166be70f1f089ebf86e215fbe4e3997bfd31');
+  });
+  it('1000개 내부 검토 문항·과목별 분포·부족0을 정확히 집계한다', () => {
+    expect(bank).toHaveLength(1000);
+    expect(new Set(bank.map(q=>q.id)).size).toBe(1000);
+    expect(new Set(bank.map(fingerprint)).size).toBe(1000);
+    SUBJECTS.forEach((s,i)=>expect(bank.filter(q=>q.subject===s)).toHaveLength([340,340,320][i]));
+    expect(PROFILE.targetReviewedCount-bank.length).toBe(0);
     expect(STORAGE_KEY).toBe('word-processor-cbt:v1');
   });
   for (const q of bank) it(`${q.id}: 단일 정답·출처·확인 한계·연도 미부여`, () => {
@@ -20,7 +24,8 @@ describe('워드프로세서 문제은행과 출처', () => {
     expect(q.reviewNote).toContain('AI의 일반 지식');
     expect(q.reviewNote).toContain('외부 전문가');
     expect(q.explanation.length).toBeGreaterThan(40);
-    expect(q.family).toBeUndefined();
+    if (q.calculation) expect(q.family).toBeTruthy();
+    else expect(q.family).toBeUndefined();
     expect(q.rights).toContain('CC BY 4.0');
   });
   it('원고에서 재생성해도 동일한 JSON',()=>{
@@ -74,14 +79,14 @@ describe('학습·복습·가져오기',()=>{
   it('순회 내 중복 없음·과목 필터·채점 한번·정답 재학습으로 오답 해제',()=>{
     let s: Store={...emptyStore(),practice:startPractice(bank,'main',SUBJECTS[0])};
     const seen=new Set<string>();
-    for(let i=0;i<40;i++) {
+    for(let i=0;i<bank.filter(q=>q.subject===SUBJECTS[0]).length;i++) {
       const p=s.practice!;const q=bank.find(q=>q.id===p.currentId)!;
       expect(q.subject).toBe(SUBJECTS[0]);expect(seen.has(q.id)).toBe(false);seen.add(q.id);
       s={...s,practice:{...p,selected:q.answer}};
       s=checkPractice(s,bank);expect(checkPractice(s,bank)).toBe(s);
       s={...s,practice:nextPractice(s.practice!,bank)};
     }
-    expect(s.attempts).toHaveLength(40);
+    expect(s.attempts).toHaveLength(340);
     const q=bank[0];let wrong={...emptyStore(),wrongIds:[q.id],practice:{...startPractice(bank,'main','전체',[q.id]),selected:q.answer}};
     expect(checkPractice(wrong,bank).wrongIds).toEqual([]);
   });
@@ -97,5 +102,17 @@ describe('학습·복습·가져오기',()=>{
     const familyBank=bank.map((q,i)=>({...q,family:`${q.subject}-${i%22}`}));
     const e=createExam(familyBank,'main');
     SUBJECTS.forEach(s=>expect(new Set(e.questions.filter(q=>q.subject===s).map(q=>q.family)).size).toBe(20));
+  });
+});
+
+describe('감사 기록',()=>{
+  it('현재 기본 JSON 해시·수량·과목별 합계가 감사 파일과 일치',()=>{
+    const raw=readFileSync('src/data/questions.json');
+    const audit=JSON.parse(readFileSync('docs/BANK_AUDIT.json','utf8'));
+    expect(audit.bankSha256).toBe(createHash('sha256').update(raw).digest('hex'));
+    expect(audit.counts).toMatchObject({total:1000,reviewed:1000,pending:0,conceptAndScenario:420,numericVariants:580,numericFamilies:29,shortfall:0});
+    expect(audit.subjects.map((s:{total:number})=>s.total)).toEqual([340,340,320]);
+    expect(audit.families.every((f:{count:number;distinctConditions:number})=>f.count===20&&f.distinctConditions===20)).toBe(true);
+    expect(audit.normalizedDuplicateContent).toBe(0);
   });
 });

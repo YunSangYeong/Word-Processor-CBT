@@ -73,6 +73,8 @@ type View =
   | "bookmarks"
   | "stats"
   | "bank";
+const baseNumeric = BASE_BANK.filter(q => q.calculation && q.family);
+const baseNumericFamilyCount = new Set(baseNumeric.map(q => q.family)).size;
 const navigation: { id: View; label: string; icon: typeof Zap }[] = [
   { id: "home", label: "학습 대시보드", icon: LayoutDashboard },
   { id: "exam", label: "실전 모의시험", icon: ClipboardList },
@@ -156,6 +158,7 @@ function Source({ q }: { q: Question }) {
   return (
     <div className="source">
       <span className="tag">{TYPE_LABEL[q.type]}</span>
+      {q.calculation && <span className="tag">계산 조건 변형</span>}
       <span>
         {q.year
           ? `${q.year}년 ${q.session ? `${q.session}회차` : ""}`
@@ -1780,7 +1783,7 @@ function BankManager({
         <details>
           <summary>시험 규칙·문항 출처·검수 범위 확인</summary>
           <p>기본 등록 {BASE_BANK.length}문항 · 목표 {PROFILE.targetReviewedCount}문항 · 부족 {Math.max(0, PROFILE.targetReviewedCount - BASE_BANK.filter(q => q.verificationStatus === "reviewed").length)}문항. 개인 로컬 등록분은 기본 은행 수에 포함하지 않습니다.</p>
-          <p>원문 기출 0 · 복원 0 · 자체 제작 {BASE_BANK.length}. 숫자 조건 변형 0. AI의 일반 지식으로 작성하고 문항·정답·보기·해설을 내부 검토했습니다. 외부 전문가 검수와 공식 출제기준 대조는 미완료입니다.</p>
+          <p>원문 기출 0 · 복원 0 · 자체 제작 {BASE_BANK.length}. 개념·사례형 {BASE_BANK.length - baseNumeric.length} · 계산 조건 변형 {baseNumeric.length}({baseNumericFamilyCount}유형). 조건 변형은 독립 개념 수가 아닙니다. AI의 일반 지식으로 작성하고 문항·정답·보기·해설을 내부 검토했습니다. 외부 전문가 검수와 공식 출제기준 대조는 미완료입니다.</p>
           <p>시험 규칙의 공식 확인은 미완료입니다. 학습용 설정: {SUBJECTS.join(" / ")} 각 {PROFILE.questionsPerSubject}문항, 총 {PROFILE.questionCount}문항·{PROFILE.durationMinutes}분·4지선다. 평균 {PROFILE.passScore}점 이상이면서 모든 과목 {PROFILE.subjectCutoff}점 이상. 미응답은 오답입니다.</p>
           <p>공식 과목명·적용 운영체제·출제기준 및 현행 규칙은 <a href={PROFILE.officialSource} target="_blank" rel="noreferrer">대한상공회의소 공식 안내</a>에서 재확인이 필요합니다. 자체 문항 CC BY 4.0. 연도·회차는 부여하지 않았습니다. 저장소 링크는 작성 위치이며 외부 정답 증빙이 아닙니다.</p>
         </details>
